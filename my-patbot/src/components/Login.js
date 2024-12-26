@@ -19,16 +19,44 @@ const Login = () => {
     localStorage.setItem("country", lang); // Save selected language to localStorage
   };
 
-  const handleJoin = (e) => {
+  const handleJoin = async (e) => {
     e.preventDefault();
-    const name = document.getElementById("name").value; // Lấy giá trị của trường tên
-    if (!name.trim()) {
-      alert("Please enter your name!");
+  
+    const userData = {
+      id: document.getElementById("id").value.trim(),
+      password: document.getElementById("password").value.trim(),
+      name: document.getElementById("name").value.trim(),
+      email: document.getElementById("email").value.trim(),
+      nationality: localStorage.getItem("country") || "en",
+    };
+  
+    if (!userData.id || !userData.password || !userData.name || !userData.email) {
+      alert("All fields are required!");
       return;
     }
-    localStorage.setItem("userName", name); // Save username to localStorage
-    navigate("/chat", { state: { userName: name } }); // Navigate to Chat interface
+  
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+  
+      const result = await response.json();
+      if (result.success) {
+        alert("Registration successful!");
+        navigate("/login"); // 로그인 페이지로 이동
+      } else {
+        alert(result.message || "Registration failed!");
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
+      alert("An error occurred. Please try again.");
+    }
   };
+  
 
   const styles = {
     container: {

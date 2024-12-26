@@ -13,6 +13,10 @@ const Welcome = () => {
   const handleLoginClick = () => {
     navigate('/login'); 
   };
+  
+  const handleStartingClick = () => {
+    navigate('/starting'); 
+  };
 
   const styles = {
     container: {
@@ -146,7 +150,10 @@ const Welcome = () => {
         </div>
         <div style={styles.logo}>PATBOT</div>
         <div style={styles.login} onClick={handleLoginClick}>
-          JOIN / LOGIN
+          JOIN
+        </div>
+        <div style={styles.login} onClick={handleStartingClick}>
+          LOGIN
         </div>
       </div>
       <div style={styles.content}>

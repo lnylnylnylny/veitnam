@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from ai_model import get_ai_response
+from werkzeug.security import generate_password_hash, check_password_hash
+from db_config import get_db_connection
 
 # Flask 초기화
 app = Flask(__name__)
@@ -28,6 +30,53 @@ def chat():
         return jsonify({"response": ai_response})
     except Exception as e:
         return jsonify({"response": f"Error generating response: {str(e)}"})
+
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    """
+    회원가입 API. 데이터를 받아 MySQL 데이터베이스에 저장합니다.
+    """
+    data = request.json
+    user_id = data.get("id")
+    password = data.get("password")
+    name = data.get("name")
+    email = data.get("email")
+    nationality = data.get("nationality")
+
+    if not all([user_id, password, name, email, nationality]):
+        return jsonify({"success": False, "message": "All fields are required!"})
+
+    # 비밀번호 해시화
+    hashed_password = generate_password_hash(password)
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        # 사용자 데이터 삽입
+        cursor.execute(
+            """
+            INSERT INTO users (id, password, name, email, nationality)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (user_id, hashed_password, name, email, nationality)
+        )
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return jsonify({"success": True, "message": "User registered successfully!"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Database error: {str(e)}"})
+    
+    
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    user = users_collection.find_one({"id": data["id"], "password": data["password"]})
+    if user:
+        return jsonify({"success": True, "message": "Login successful!"})
+    return jsonify({"success": False, "message": "Invalid ID or password."})
 
 @app.route('/')
 def home():
