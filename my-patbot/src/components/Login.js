@@ -1,27 +1,25 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "./LanguageContext";
+import { useDarkMode } from "./DarkModeContext"; // 다크모드 Context 추가
 import iconVN from "../icon/vietnam.png";
 import iconKR from "../icon/south-korea.png";
 import iconUS from "../icon/usa.png";
+import Heading from "./Heading";
 
 const Login = () => {
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
-  const { language, changeLanguage } = useLanguage(); // Context for language
+  const { isDarkTheme } = useDarkMode(); // 다크모드 상태 가져오기
+  const { language, changeLanguage } = useLanguage(); // 언어 Context 사용
   const navigate = useNavigate();
-
-  const toggleTheme = () => {
-    setIsDarkTheme((prevTheme) => !prevTheme);
-  };
 
   const handleLanguageChange = (lang) => {
     changeLanguage(lang);
-    localStorage.setItem("country", lang); // Save selected language to localStorage
+    localStorage.setItem("country", lang); // 언어 설정 로컬 저장
   };
 
   const handleJoin = async (e) => {
     e.preventDefault();
-  
+
     const userData = {
       id: document.getElementById("id").value.trim(),
       password: document.getElementById("password").value.trim(),
@@ -29,12 +27,12 @@ const Login = () => {
       email: document.getElementById("email").value.trim(),
       nationality: localStorage.getItem("country") || "en",
     };
-  
+
     if (!userData.id || !userData.password || !userData.name || !userData.email) {
       alert("All fields are required!");
       return;
     }
-  
+
     try {
       const response = await fetch("http://127.0.0.1:5000/api/register", {
         method: "POST",
@@ -43,11 +41,11 @@ const Login = () => {
         },
         body: JSON.stringify(userData),
       });
-  
+
       const result = await response.json();
       if (result.success) {
         alert("Registration successful!");
-        navigate("/login"); // 로그인 페이지로 이동
+        navigate("/starting"); // 로그인 페이지로 이동
       } else {
         alert(result.message || "Registration failed!");
       }
@@ -56,27 +54,34 @@ const Login = () => {
       alert("An error occurred. Please try again.");
     }
   };
-  
 
   const styles = {
     container: {
+      width: '100%',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
       fontFamily: '"Arial", sans-serif',
-      backgroundColor: isDarkTheme ? "#121212" : "#ffffff",
-      color: isDarkTheme ? "#ffffff" : "#000000",
-      minHeight: "100vh",
-      padding: "20px",
+      margin: 0,
+      padding: 0,
+      boxSizing: 'border-box',
+      position: 'relative',
+      backgroundColor: isDarkTheme ? '#121212' : '#f9f9f9',
+      color: isDarkTheme ? '#f9f9f9' : '#333',
     },
-    header: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: "20px",
-    },
-    form: {
-      backgroundColor: isDarkTheme ? "rgba(110, 119, 119, 0.8)" : "rgba(36, 236, 225, 0.8)",
-      padding: "20px",
+    formWrapper: {
+      maxWidth: "600px", // 폼 너비 조정
+      width: "100%",
+      backgroundColor: isDarkTheme ? "#333" : "#fff",
       borderRadius: "10px",
-      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      boxShadow: isDarkTheme
+        ? "0 4px 6px rgba(0, 0, 0, 0.5)"
+        : "0 4px 6px rgba(0, 0, 0, 0.1)",
+      padding: "20px 30px",
+      textAlign: "center",
+      marginTop: "40px", // Heading과의 간격 추가
     },
     formGroup: {
       display: "flex",
@@ -86,15 +91,16 @@ const Login = () => {
     label: {
       fontWeight: "bold",
       marginBottom: "5px",
+      textAlign: "left", // 좌측 정렬
     },
     input: {
       display: "block",
-      backgroundColor: isDarkTheme ? "rgba(151, 161, 160, 0.8)" : "#ffffff",
-      width: "90%",
-      margin: "10px 0",
+      width: "100%",
       padding: "10px",
       borderRadius: "5px",
-      border: "1px solid #ddd",
+      border: isDarkTheme ? "1px solid #444" : "1px solid #ddd",
+      backgroundColor: isDarkTheme ? "#555" : "#ffffff",
+      color: isDarkTheme ? "#ffffff" : "#000000",
     },
     button: {
       padding: "10px 20px",
@@ -103,18 +109,27 @@ const Login = () => {
       border: "none",
       borderRadius: "5px",
       cursor: "pointer",
+      marginTop: "20px",
+    },
+    flagWrapper: {
+      display: "flex",
+      justifyContent: "center",
+      gap: "15px",
       marginTop: "10px",
     },
     flag: {
       cursor: "pointer",
-      margin: "5px",
       width: "40px",
       height: "30px",
-      border: "1px solid #ddd",
     },
     nationalityLabel: {
       fontWeight: "bold",
       marginBottom: "10px",
+    },
+    title: {
+      textAlign: "center",
+      marginBottom: "0px",
+      fontSize: "20px",
     },
   };
 
@@ -150,76 +165,70 @@ const Login = () => {
 
   return (
     <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <h1>PATBOT</h1>
-        <div>
-          <button onClick={toggleTheme} style={{ cursor: "pointer" }}>
-            {isDarkTheme ? "☀️" : "🌙"}
-          </button>
-        </div>
-      </div>
+      <Heading />
+      <div style={styles.formWrapper}>
+        <form onSubmit={handleJoin}>
+          <p style={styles.title}>{texts[language].title}</p>
 
-      {/* Form */}
-      <form style={styles.form} onSubmit={handleJoin}>
-        <p>{texts[language].title}</p>
 
-        <div style={styles.formGroup}>
-          <label htmlFor="id" style={styles.label}>
-            {texts[language].id}
-          </label>
-          <input id="id" type="text" required style={styles.input} />
-        </div>
 
-        <div style={styles.formGroup}>
-          <label htmlFor="password" style={styles.label}>
-            {texts[language].password}
-          </label>
-          <input id="password" type="password" required style={styles.input} />
-        </div>
-
-        <div style={styles.formGroup}>
-          <label htmlFor="name" style={styles.label}>
-            {texts[language].name}
-          </label>
-          <input id="name" type="text" required style={styles.input} />
-        </div>
-
-        <div style={styles.formGroup}>
-          <label htmlFor="email" style={styles.label}>
-            {texts[language].email}
-          </label>
-          <input id="email" type="email" required style={styles.input} />
-        </div>
-
-        <div style={styles.formGroup}>
-          <p style={styles.nationalityLabel}>{texts[language].nationality}</p>
-          <div>
-            <img
-              src={iconKR}
-              alt="Korea"
-              style={styles.flag}
-              onClick={() => handleLanguageChange("kr")}
-            />
-            <img
-              src={iconVN}
-              alt="Vietnam"
-              style={styles.flag}
-              onClick={() => handleLanguageChange("vn")}
-            />
-            <img
-              src={iconUS}
-              alt="USA"
-              style={styles.flag}
-              onClick={() => handleLanguageChange("en")}
-            />
+          <div style={styles.formGroup}>
+            <p style={styles.nationalityLabel}>{texts[language].nationality}</p>
+            <div style={styles.flagWrapper}>
+              <img
+                src={iconKR}
+                alt="Korea"
+                style={styles.flag}
+                onClick={() => handleLanguageChange("kr")}
+              />
+              <img
+                src={iconVN}
+                alt="Vietnam"
+                style={styles.flag}
+                onClick={() => handleLanguageChange("vn")}
+              />
+              <img
+                src={iconUS}
+                alt="USA"
+                style={styles.flag}
+                onClick={() => handleLanguageChange("en")}
+              />
+            </div>
           </div>
-        </div>
 
-        <button type="submit" style={styles.button}>
-          {texts[language].join}
-        </button>
-      </form>
+          <div style={styles.formGroup}>
+            <label htmlFor="id" style={styles.label}>
+              {texts[language].id}
+            </label>
+            <input id="id" type="text" required style={styles.input} />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="password" style={styles.label}>
+              {texts[language].password}
+            </label>
+            <input id="password" type="password" required style={styles.input} />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="name" style={styles.label}>
+              {texts[language].name}
+            </label>
+            <input id="name" type="text" required style={styles.input} />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label htmlFor="email" style={styles.label}>
+              {texts[language].email}
+            </label>
+            <input id="email" type="email" required style={styles.input} />
+          </div>
+
+          <button type="submit" style={styles.button}>
+            {texts[language].join}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

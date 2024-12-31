@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDarkMode } from "./DarkModeContext"; // 다크모드 Context 추가
+import Heading from "./Heading";
 
 const Starting = () => {
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
+  const { isDarkTheme } = useDarkMode(); // 다크모드 상태 가져오기
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -26,9 +29,9 @@ const Starting = () => {
 
       const data = await response.json();
       if (data.success) {
-        navigate("/chat", { state: { userName: id } }); // 로그인 성공 시 채팅 화면으로 이동
+        navigate("/chat", { state: { userName: id } });
       } else {
-        setErrorMessage(data.message || "Login failed. Please try again.");
+        setErrorMessage(data.message || "Login failed.");
       }
     } catch (error) {
       setErrorMessage("Server error. Please try again later.");
@@ -42,43 +45,58 @@ const Starting = () => {
 
   const styles = {
     container: {
+      width: '100%',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
       fontFamily: '"Arial", sans-serif',
-      backgroundColor: "#f5f5f5",
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      margin: 0,
+      padding: 0,
+      boxSizing: 'border-box',
+      position: 'relative',
+      backgroundColor: isDarkTheme ? '#121212' : '#f9f9f9',
+      color: isDarkTheme ? '#f9f9f9' : '#333',
     },
     form: {
-      backgroundColor: "#ffffff",
+      backgroundColor: isDarkTheme ? "#333333" : "#ffffff",
       padding: "20px",
       borderRadius: "10px",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-      maxWidth: "400px",
+      boxShadow: isDarkTheme
+        ? "0 4px 8px rgba(0, 0, 0, 0.5)"
+        : "0 4px 8px rgba(0, 0, 0, 0.1)",
+      maxWidth: "500px",
       width: "100%",
+      boxSizing: "border-box",
+      textAlign: "center",
+      marginTop: "60px",
     },
     input: {
-      width: "100%",
+      width: "calc(100% - 20px)",
       padding: "10px",
       margin: "10px 0",
-      border: "1px solid #ccc",
+      border: isDarkTheme ? "1px solid #444" : "1px solid #ccc",
       borderRadius: "5px",
+      boxSizing: "border-box",
+      backgroundColor: isDarkTheme ? "#555" : "#ffffff",
+      color: isDarkTheme ? "#ffffff" : "#000000",
     },
     button: {
-      width: "100%",
+      width: "95%",
       padding: "10px",
-      backgroundColor: "#007bff",
-      color: "#fff",
+      backgroundColor: isDarkTheme ? "#007bff" : "#C8F6F8",
+      color: isDarkTheme ? "#ffffff" : "black",
       border: "none",
       borderRadius: "5px",
       cursor: "pointer",
-      margin: "10px 0",
+      margin: "20px 0",
     },
     link: {
       display: "block",
       marginTop: "10px",
       textAlign: "center",
-      color: "#007bff",
+      color: isDarkTheme ? "#66bfff" : "#007bff",
       cursor: "pointer",
     },
     errorMessage: {
@@ -90,6 +108,7 @@ const Starting = () => {
 
   return (
     <div style={styles.container}>
+      <Heading />
       <form style={styles.form} onSubmit={handleLogin}>
         <h2>Login</h2>
         <input
