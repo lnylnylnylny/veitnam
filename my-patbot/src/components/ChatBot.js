@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useDarkMode } from "./DarkModeContext";
+import sidebarIcon from "../icon/sidebar.png"; // Sidebar Icon 추가
+import sendIcon from "../icon/send.png"; // Send Icon 추가
 
 const Chatbot = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isDarkTheme, toggleTheme } = useDarkMode(); // 다크모드 Context 사용
   const userName = location.state?.userName || "User";
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [language, setLanguage] = useState("en");
   const [labels, setLabels] = useState({
@@ -31,7 +34,7 @@ const Chatbot = () => {
       logoutLabel = "Logout";
       greetingLabel = `Hello, ${userName}!`;
     } else if (savedLanguage === "kr") {
-      initialMessage = "PATBOT에 오신 것을 환영합니다! 질문하세요.";
+      initialMessage = "PATBOT에 오신 것을 환영합니다! 특허에 관련하여 질문해주세요.";
       logoutLabel = "로그아웃";
       greetingLabel = `안녕하세요, ${userName}!`;
     } else if (savedLanguage === "vn") {
@@ -48,10 +51,6 @@ const Chatbot = () => {
     setLabels({ logout: logoutLabel, greeting: greetingLabel });
   }, [userName]);
 
-  const toggleTheme = () => {
-    setIsDarkTheme((prevTheme) => !prevTheme);
-  };
-
   const toggleSidebar = () => {
     setIsSidebarOpen((prevState) => !prevState);
   };
@@ -60,10 +59,8 @@ const Chatbot = () => {
     e.preventDefault();
     if (input.trim() === "") return;
 
-    // 사용자 메시지 추가
     setMessages((prev) => [...prev, { sender: "user", text: input }]);
 
-    // Flask 서버 호출
     try {
       const response = await fetch("http://127.0.0.1:5000/api/chat", {
         method: "POST",
@@ -74,14 +71,13 @@ const Chatbot = () => {
       });
 
       const data = await response.json();
-      // Flask에서 받은 응답 추가
       setMessages((prev) => [...prev, { sender: "bot", text: data.response }]);
     } catch (error) {
       console.error("Error communicating with backend:", error);
       setMessages((prev) => [...prev, { sender: "bot", text: "Sorry, there was an error!" }]);
     }
 
-    setInput(""); // 입력 필드 초기화
+    setInput("");
   };
 
   const handleLogout = () => {
@@ -90,18 +86,25 @@ const Chatbot = () => {
 
   const styles = {
     container: {
-      fontFamily: '"Arial", sans-serif',
-      backgroundColor: isDarkTheme ? "#121212" : "#ffffff",
-      color: isDarkTheme ? "#ffffff" : "#000000",
-      minHeight: "100vh",
+      width: "100%",
+      height: "100vh",
       display: "flex",
-      flexDirection: "row",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      fontFamily: '"Arial", sans-serif',
+      margin: 0,
+      padding: 0,
+      boxSizing: "border-box",
+      position: "relative",
+      backgroundColor: isDarkTheme ? "#121212" : "#f9f9f9",
+      color: isDarkTheme ? "#f9f9f9" : "#333",
     },
     sidebar: {
       width: "250px",
       height: "100vh",
-      backgroundColor: isDarkTheme ? "#333333" : "#f1f1f1", // Đổi nền theo theme
-      color: isDarkTheme ? "#ffffff" : "#000000", // Đổi chữ theo theme
+      backgroundColor: isDarkTheme ? "#333333" : "#f1f1f1",
+      color: isDarkTheme ? "#ffffff" : "#000000",
       boxShadow: "-2px 0 5px rgba(0,0,0,0.1)",
       padding: "20px",
       position: "fixed",
@@ -109,11 +112,6 @@ const Chatbot = () => {
       top: "0",
       transition: "left 0.3s ease",
       zIndex: 10,
-    },
-    sidebarContent: {
-      fontSize: "16px",
-      fontWeight: "bold",
-      marginBottom: "10px",
     },
     chatArea: {
       flex: 1,
@@ -129,6 +127,60 @@ const Chatbot = () => {
       padding: "10px 20px",
       borderBottom: `1px solid ${isDarkTheme ? "#ffffff" : "#000000"}`,
     },
+    buttonGroup: {
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+    },
+    toggleButton: {
+      padding: "5px 10px",
+      backgroundColor: "transparent",
+      border: "none",
+      cursor: "pointer",
+    },
+    icon: {
+      width: "24px",
+      height: "24px",
+    },
+    switch: {
+      position: "relative",
+      display: "inline-block",
+      width: "34px",
+      height: "20px",
+    },
+    switchInput: {
+      opacity: 0,
+      width: 0,
+      height: 0,
+    },
+    slider: {
+      position: "absolute",
+      cursor: "pointer",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "#ccc",
+      transition: "0.4s",
+      borderRadius: "34px",
+    },
+    sliderBefore: {
+      position: "absolute",
+      content: '""',
+      height: "14px",
+      width: "14px",
+      left: "3px",
+      bottom: "3px",
+      backgroundColor: "white",
+      transition: "0.4s",
+      borderRadius: "50%",
+    },
+    sliderChecked: {
+      backgroundColor: "#2196f3",
+    },
+    sliderBeforeChecked: {
+      transform: "translateX(14px)",
+    },
     logoutButton: {
       marginRight: "10px",
       padding: "5px 10px",
@@ -138,18 +190,17 @@ const Chatbot = () => {
       borderRadius: "5px",
       cursor: "pointer",
     },
-    greeting: {
-      fontWeight: "bold",
-    },
     chatWindow: {
       flex: 1,
       padding: "20px",
       overflowY: "auto",
       display: "flex",
       flexDirection: "column",
+      maxWidth: "100%",
+      margin: "0 auto",
     },
     message: {
-      maxWidth: "60%",
+      maxWidth: "70%",
       padding: "10px 15px",
       borderRadius: "10px",
       marginBottom: "10px",
@@ -170,11 +221,10 @@ const Chatbot = () => {
       display: "flex",
       alignItems: "center",
       padding: "10px",
-      borderTop: `none`,
+      borderTop: "none",
       backgroundColor: "#e0f7fa",
       borderRadius: "10px",
       margin: "10px 20px",
-      width: "820px",
     },
     input: {
       flex: 1,
@@ -184,43 +234,58 @@ const Chatbot = () => {
       outline: "none",
       backgroundColor: "#e0f7fa",
       fontSize: "16px",
-      width: "100%",
     },
-    toggleButton: {
-      position: "absolute",
-      left: isSidebarOpen ? "250px" : "0",
-      top: "50%",
-      transform: "translateY(-50%)",
-      backgroundColor: "#007bff",
-      color: "#ffffff",
+    sendButton: {
+      padding: "5px",
       border: "none",
-      borderRadius: "5px 0 0 5px",
-      padding: "10px",
+      background: "transparent",
       cursor: "pointer",
-      zIndex: 20,
+    },
+    sendIcon: {
+      width: "24px",
+      height: "24px",
     },
   };
 
   return (
     <div style={styles.container}>
-      {/* Sidebar */}
       <div style={styles.sidebar}>
-        <h3 style={styles.sidebarContent}>Sidebar</h3>
-        <p>Here can show patent information</p>
+        <h3>Sidebar</h3>
+        <p>대화 내역</p>
       </div>
 
-      {/* Chat Area */}
       <div style={styles.chatArea}>
-        <button onClick={toggleSidebar} style={styles.toggleButton}>
-          {isSidebarOpen ? "<" : ">"}
-        </button>
-
         <div style={styles.header}>
+          <div style={styles.buttonGroup}>
+            <button onClick={toggleSidebar} style={styles.toggleButton}>
+              <img src={sidebarIcon} alt="Toggle Sidebar" style={styles.icon} />
+            </button>
+            <label style={styles.switch}>
+              <input
+                type="checkbox"
+                onChange={toggleTheme}
+                checked={isDarkTheme}
+                style={styles.switchInput}
+              />
+              <span
+                style={{
+                  ...styles.slider,
+                  ...(isDarkTheme ? styles.sliderChecked : {}),
+                }}
+              >
+                <span
+                  style={{
+                    ...styles.sliderBefore,
+                    ...(isDarkTheme ? styles.sliderBeforeChecked : {}),
+                  }}
+                ></span>
+              </span>
+            </label>
+          </div>
+          <span>{labels.greeting}</span>
           <button onClick={handleLogout} style={styles.logoutButton}>
             {labels.logout}
           </button>
-          <span style={styles.greeting}>{labels.greeting}</span>
-          <button onClick={toggleTheme}>{isDarkTheme ? "☀️" : "🌙"}</button>
         </div>
 
         <div style={styles.chatWindow}>
@@ -246,7 +311,7 @@ const Chatbot = () => {
             style={styles.input}
           />
           <button type="submit" style={styles.sendButton}>
-            ➤
+            <img src={sendIcon} alt="Send" style={styles.sendIcon} />
           </button>
         </form>
       </div>
