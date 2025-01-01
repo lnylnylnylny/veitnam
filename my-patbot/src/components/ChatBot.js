@@ -221,7 +221,8 @@ const Chatbot = () => {
       overflowY: "auto",
       display: "flex",
       flexDirection: "column",
-      maxWidth: "90%",
+      //반응형일 때 width: "100%", maxWidth: "900px",
+      width: "900px", // 화면 사이즈 맞춤 설정
       margin: "0 auto",
       borderRadius: "10px",
     },
