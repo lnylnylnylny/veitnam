@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDarkMode } from "./DarkModeContext";
-import sidebarIcon from "../icon/sidebar.png"; // Sidebar Icon 추가
-import sendIcon from "../icon/send.png"; // Send Icon 추가
+import sidebarIcon from "../icon/sidebar.png";
+import sendIcon from "../icon/send.png";
+import newchat from "../icon/refresh.png";
+
 
 const Chatbot = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { isDarkTheme, toggleTheme } = useDarkMode(); // 다크모드 Context 사용
-  const userName = location.state?.userName || "User";
-
-  const [messages, setMessages] = useState([]);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [currentChat, setCurrentChat] = useState([]);
   const [input, setInput] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isDarkTheme, toggleTheme } = useDarkMode();
+  const userName = location.state?.userName || "User";
+
   const [language, setLanguage] = useState("en");
   const [labels, setLabels] = useState({
     logout: "Logout",
@@ -47,7 +50,7 @@ const Chatbot = () => {
       greetingLabel = `Hello, ${userName}!`;
     }
 
-    setMessages([{ sender: "bot", text: initialMessage }]);
+    setCurrentChat([{ sender: "bot", text: initialMessage }]);
     setLabels({ logout: logoutLabel, greeting: greetingLabel });
   }, [userName]);
 
@@ -57,9 +60,9 @@ const Chatbot = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (input.trim() === "") return;
+    if (!input.trim()) return;
 
-    setMessages((prev) => [...prev, { sender: "user", text: input }]);
+    setCurrentChat((prev) => [...prev, { sender: "user", text: input }]);
 
     try {
       const response = await fetch("http://127.0.0.1:5000/api/chat", {
@@ -71,13 +74,20 @@ const Chatbot = () => {
       });
 
       const data = await response.json();
-      setMessages((prev) => [...prev, { sender: "bot", text: data.response }]);
+      setCurrentChat((prev) => [...prev, { sender: "bot", text: data.response }]);
     } catch (error) {
       console.error("Error communicating with backend:", error);
-      setMessages((prev) => [...prev, { sender: "bot", text: "Sorry, there was an error!" }]);
+      setCurrentChat((prev) => [...prev, { sender: "bot", text: "Sorry, there was an error!" }]);
     }
 
     setInput("");
+  };
+
+  const saveCurrentChat = () => {
+    if (currentChat.length > 0) {
+      setChatHistory((prev) => [...prev, { id: Date.now(), messages: currentChat }]);
+      setCurrentChat([]);
+    }
   };
 
   const handleLogout = () => {
@@ -142,6 +152,7 @@ const Chatbot = () => {
       width: "24px",
       height: "24px",
     },
+
     switch: {
       position: "relative",
       display: "inline-block",
@@ -190,13 +201,18 @@ const Chatbot = () => {
       borderRadius: "5px",
       cursor: "pointer",
     },
+
+    sendIcon: {
+      width: "24px",
+      height: "24px",
+    },
     chatWindow: {
       flex: 1,
       padding: "20px",
       overflowY: "auto",
       display: "flex",
       flexDirection: "column",
-      maxWidth: "100%",
+      maxWidth: "90%",
       margin: "0 auto",
     },
     message: {
@@ -221,7 +237,6 @@ const Chatbot = () => {
       display: "flex",
       alignItems: "center",
       padding: "10px",
-      borderTop: "none",
       backgroundColor: "#e0f7fa",
       borderRadius: "10px",
       margin: "10px 20px",
@@ -235,23 +250,27 @@ const Chatbot = () => {
       backgroundColor: "#e0f7fa",
       fontSize: "16px",
     },
-    sendButton: {
+    saveChatButton: {
       padding: "5px",
-      border: "none",
       background: "transparent",
+      border: "none",
       cursor: "pointer",
-    },
-    sendIcon: {
-      width: "24px",
-      height: "24px",
     },
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.sidebar}>
-        <h3>Sidebar</h3>
-        <p>대화 내역</p>
+        <h3>채팅 기록</h3>
+        {chatHistory.map((chat) => (
+          <div
+            key={chat.id}
+            onClick={() => setCurrentChat(chat.messages)}
+            style={styles.message}
+          >
+            {new Date(chat.id).toLocaleString()}
+          </div>
+        ))}
       </div>
 
       <div style={styles.chatArea}>
@@ -267,7 +286,7 @@ const Chatbot = () => {
                 checked={isDarkTheme}
                 style={styles.switchInput}
               />
-              <span
+               <span
                 style={{
                   ...styles.slider,
                   ...(isDarkTheme ? styles.sliderChecked : {}),
@@ -289,7 +308,7 @@ const Chatbot = () => {
         </div>
 
         <div style={styles.chatWindow}>
-          {messages.map((msg, index) => (
+          {currentChat.map((msg, index) => (
             <div
               key={index}
               style={{
@@ -303,6 +322,9 @@ const Chatbot = () => {
         </div>
 
         <form style={styles.inputSection} onSubmit={handleSendMessage}>
+          <button type="button" onClick={saveCurrentChat} style={styles.saveChatButton}>
+            <img src={newchat} alt="Save Chat" style={styles.sendIcon} />
+          </button>
           <input
             type="text"
             placeholder="Type your message..."
@@ -310,7 +332,7 @@ const Chatbot = () => {
             onChange={(e) => setInput(e.target.value)}
             style={styles.input}
           />
-          <button type="submit" style={styles.sendButton}>
+          <button type="submit" style={styles.saveChatButton}>
             <img src={sendIcon} alt="Send" style={styles.sendIcon} />
           </button>
         </form>
