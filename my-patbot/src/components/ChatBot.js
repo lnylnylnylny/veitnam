@@ -4,7 +4,8 @@ import { useDarkMode } from "./DarkModeContext";
 import sidebarIcon from "../icon/sidebar.png";
 import sendIcon from "../icon/send.png";
 import newchat from "../icon/refresh.png";
-
+import robot from "../icon/robot.png";
+import user from "../icon/user (1).png";
 
 const Chatbot = () => {
   const [chatHistory, setChatHistory] = useState([]);
@@ -15,6 +16,7 @@ const Chatbot = () => {
   const navigate = useNavigate();
   const { isDarkTheme, toggleTheme } = useDarkMode();
   const userName = location.state?.userName || "User";
+  const [selectedChatId, setSelectedChatId] = useState(null);
 
   const [language, setLanguage] = useState("en");
   const [labels, setLabels] = useState({
@@ -27,32 +29,30 @@ const Chatbot = () => {
     if (savedLanguage) {
       setLanguage(savedLanguage);
     }
-
+  
     let initialMessage = "";
     let logoutLabel = "";
     let greetingLabel = "";
-
-    if (savedLanguage === "en") {
-      initialMessage = "WELCOME TO PATBOT! ASK FOR ME";
-      logoutLabel = "Logout";
-      greetingLabel = `Hello, ${userName}!`;
-    } else if (savedLanguage === "kr") {
+  
+    if (savedLanguage === "kr") {
       initialMessage = "PATBOT에 오신 것을 환영합니다! 특허에 관련하여 질문해주세요.";
       logoutLabel = "로그아웃";
       greetingLabel = `안녕하세요, ${userName}!`;
-    } else if (savedLanguage === "vn") {
-      initialMessage = "CHÀO MỪNG ĐẾN VỚI PATBOT! HỎI TÔI ĐI.";
-      logoutLabel = "Đăng xuất";
-      greetingLabel = `Xin chào, ${userName}!`;
     } else {
       initialMessage = "WELCOME TO PATBOT! ASK FOR ME";
       logoutLabel = "Logout";
       greetingLabel = `Hello, ${userName}!`;
     }
-
+  
     setCurrentChat([{ sender: "bot", text: initialMessage }]);
     setLabels({ logout: logoutLabel, greeting: greetingLabel });
-  }, [userName]);
+  
+    // 새로고침 이후 사이드바 상태를 조정
+    if (chatHistory.length > 0) {
+      setIsSidebarOpen(true); // 새로고침 후 사이드바를 강제로 열기
+    }
+  }, [userName, chatHistory]); // `chatHistory`를 의존성 배열에 추가
+  
 
   const toggleSidebar = () => {
     setIsSidebarOpen((prevState) => !prevState);
@@ -62,6 +62,8 @@ const Chatbot = () => {
     e.preventDefault();
     if (!input.trim()) return;
 
+    setInput(""); // 입력 필드 초기화
+    
     setCurrentChat((prev) => [...prev, { sender: "user", text: input }]);
 
     try {
@@ -78,21 +80,27 @@ const Chatbot = () => {
     } catch (error) {
       console.error("Error communicating with backend:", error);
       setCurrentChat((prev) => [...prev, { sender: "bot", text: "Sorry, there was an error!" }]);
-    }
+    } 
+      
 
-    setInput("");
   };
 
   const saveCurrentChat = () => {
     if (currentChat.length > 0) {
       setChatHistory((prev) => [...prev, { id: Date.now(), messages: currentChat }]);
-      setCurrentChat([]);
+      setCurrentChat([]); // 새 채팅 초기화
+      setInput(""); // 입력창 초기화
     }
   };
-
+  
   const handleLogout = () => {
     navigate("/");
   };
+
+  const deleteChatHistory = (id) => {
+    setChatHistory((prev) => prev.filter((chat) => chat.id !== id));
+  };
+  
 
   const styles = {
     container: {
@@ -129,6 +137,7 @@ const Chatbot = () => {
       transition: "margin-left 0.3s ease",
       display: "flex",
       flexDirection: "column",
+      overflow: "hidden", // 오버플로우 방지
     },
     header: {
       display: "flex",
@@ -214,24 +223,38 @@ const Chatbot = () => {
       flexDirection: "column",
       maxWidth: "90%",
       margin: "0 auto",
+      borderRadius: "10px",
+    },
+    messageContainer: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "10px",
+      marginBottom: "10px",
+    },
+    messageContainerUser: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "10px",
+      marginBottom: "10px",
+      flexDirection: "row-reverse", // 사용자 메시지 아이콘을 오른쪽으로 정렬
     },
     message: {
       maxWidth: "70%",
       padding: "10px 15px",
       borderRadius: "10px",
-      marginBottom: "10px",
       lineHeight: "1.5",
-      display: "inline-block",
     },
     botMessage: {
       backgroundColor: "#cceeff",
       color: "#000000",
-      alignSelf: "flex-start",
     },
     userMessage: {
       backgroundColor: "#cccccc",
       color: "#000000",
-      alignSelf: "flex-end",
+    },
+    messageImage: {
+      width: "30px",
+      height: "30px",
     },
     inputSection: {
       display: "flex",
@@ -256,22 +279,69 @@ const Chatbot = () => {
       border: "none",
       cursor: "pointer",
     },
+    selectedChat: {
+      backgroundColor: isDarkTheme ? "#555555" : "#e0f7fa", // 강조 색상
+      color: isDarkTheme ? "#ffffff" : "#000000", 
+      borderRadius: "5px",
+      padding: "10px",
+    },
+    chatItem: {
+      padding: "10px",
+      cursor: "pointer",
+      marginBottom: "10px",
+      borderRadius: "5px",
+    },
+    deleteButton: {
+      background: "transparent",
+      border: "none",
+      cursor: "pointer",
+      color: isDarkTheme ? "#ffffff" : "#000000",
+      fontSize: "16px",
+      marginLeft: "10px",
+    },
+    chatHistoryItem: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "5px",
+      borderRadius: "5px",
+      marginBottom: "5px",
+      cursor: "pointer",
+      backgroundColor: "transparent",
+    },
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.sidebar}>
-        <h3>채팅 기록</h3>
-        {chatHistory.map((chat) => (
-          <div
-            key={chat.id}
-            onClick={() => setCurrentChat(chat.messages)}
-            style={styles.message}
-          >
-            {new Date(chat.id).toLocaleString()}
-          </div>
-        ))}
-      </div>
+  <h3>채팅 기록</h3>
+  {chatHistory.map((chat) => (
+    <div
+      key={chat.id}
+      onClick={() => {
+        setSelectedChatId(chat.id); // 선택된 채팅 ID 설정
+        setCurrentChat(chat.messages); // 채팅 내용을 로드
+      }}
+      style={{
+        ...styles.chatHistoryItem,
+        ...(selectedChatId === chat.id ? styles.selectedChat : {}),
+      }}
+    >
+      <span style={{ flex: 1 }}>
+        {new Date(chat.id).toLocaleString()}
+      </span>
+      <button
+        onClick={(e) => {
+          e.stopPropagation(); // 클릭 이벤트 전파 방지
+          deleteChatHistory(chat.id); // 해당 채팅 삭제
+        }}
+        style={styles.deleteButton}
+      >
+        X
+      </button>
+    </div>
+  ))}
+</div>
 
       <div style={styles.chatArea}>
         <div style={styles.header}>
@@ -308,18 +378,33 @@ const Chatbot = () => {
         </div>
 
         <div style={styles.chatWindow}>
-          {currentChat.map((msg, index) => (
-            <div
-              key={index}
-              style={{
-                ...styles.message,
-                ...(msg.sender === "bot" ? styles.botMessage : styles.userMessage),
-              }}
-            >
-              {msg.text}
-            </div>
-          ))}
-        </div>
+  {currentChat.map((msg, index) => (
+    <div
+      key={index}
+      style={
+        msg.sender === "bot" ? styles.messageContainer : styles.messageContainerUser
+      }
+    >
+      {/* AI와 사용자 아이콘 */}
+      <img
+        src={msg.sender === "bot" ? robot : user}
+        alt={msg.sender === "bot" ? "Robot" : "User"}
+        style={styles.messageImage}
+      />
+
+      {/* 메시지 내용 */}
+      <div
+        style={{
+          ...styles.message,
+          ...(msg.sender === "bot" ? styles.botMessage : styles.userMessage),
+        }}
+      >
+        <span>{msg.text}</span>
+      </div>
+    </div>
+  ))}
+</div>
+
 
         <form style={styles.inputSection} onSubmit={handleSendMessage}>
           <button type="button" onClick={saveCurrentChat} style={styles.saveChatButton}>
