@@ -6,6 +6,7 @@ import Welcome from './components/Welcome';
 import Login from './components/Login';
 import ChatBot from './components/ChatBot';
 import Starting from './components/Starting';
+import Specification from './components/Specification/Specification';
 
 const App = () => {
   return (
@@ -17,6 +18,7 @@ const App = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/starting" element={<Starting />} />
             <Route path="/chat" element={<ChatBot />} />
+            <Route path="/specification" element={<Specification />} />
           </Routes>
         </Router>
       </DarkModeProvider>

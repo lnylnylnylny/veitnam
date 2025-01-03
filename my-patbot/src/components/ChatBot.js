@@ -10,6 +10,7 @@ import Sidebar from "./Sidebar.js";
 import loadingIcon from "../icon/Loading.gif";
 
 
+
 const Chatbot = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [currentChat, setCurrentChat] = useState([]);
@@ -24,6 +25,7 @@ const Chatbot = () => {
   const [selectedInput, setSelectedInput] = useState("");
   const [showSidebar, setShowSidebar] = useState(false);
   const [loading, setLoading] = useState(false); // 로딩 상태 추가
+  const [showActionButton, setShowActionButton] = useState(false); // 버튼 표시 상태
 
 
   const [language, setLanguage] = useState("en");
@@ -83,8 +85,24 @@ const Chatbot = () => {
     setSelectedInput("시나리오 시뮬레이션의 유사 특허들을 보여줘");
   } else if (input.includes("우울증 진단 게임의 유사 특허들을 보여줘")) {
     setSelectedInput("우울증 진단 게임의 유사 특허들을 보여줘");
-  } else {
+  } else if (input.includes("우울증 진단 게임 명세서를 작성하고 싶어 도와줘")) {
+    setLoading(true); // 로딩 시작
+    setTimeout(() => {
+      setCurrentChat((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "네, 도와드리겠습니다. 아래 버튼을 눌러주세요!",
+        },
+      ]);
+      setShowActionButton(true); // 버튼 표시 상태 활성화
+      setLoading(false); // 로딩 종료
+    }, 1000); // 1초 후 작업 수행
+    return; // AI 호출 중단
+  }  
+  else {
     setSelectedInput(""); // 다른 질문일 경우 Sidebar 닫기
+    setShowActionButton(false); // 버튼 숨기기
   }
 
     try {
@@ -249,8 +267,8 @@ const Chatbot = () => {
       overflowY: "auto",
       display: "flex",
       flexDirection: "column",
-      width: "100%", maxWidth: "800px",//반응형일 때 
-      // width: "900px", // 화면 사이즈 맞춤 설정
+      //width: "100%", maxWidth: "800px",반응형일 때 
+      width: "800px", // 화면 사이즈 맞춤 설정
       margin: "0 auto",
       borderRadius: "10px",
       scrollbarWidth: "thin", // Firefox에서 얇은 스크롤바
@@ -419,7 +437,8 @@ const Chatbot = () => {
         </div>
 
         <div style={styles.chatWindow}>
-  {currentChat.map((msg, index) => (
+  {currentChat.map((msg, index) => (    
+
     <div
       key={index}
       style={
@@ -445,11 +464,33 @@ const Chatbot = () => {
       </div>
     </div>
   ))}
-            {loading && (
-            <div style={styles.loading}>
-              <img src={loadingIcon} alt="Loading..." style={styles.loadingIcon} />
-            </div>
-          )}
+
+    {/* 로딩 상태 */}
+      {loading && (
+        <div style={styles.loading}>
+          <img src={loadingIcon} alt="Loading..." style={styles.loadingIcon} />
+        </div>
+      )}
+          
+  {/* 버튼 렌더링 */}
+  {showActionButton && (
+    <div style={{ textAlign: "center", margin: "10px 0" }}>
+      <button
+        style={{
+          padding: "10px 20px",
+          backgroundColor: "#007bff",
+          color: "#fff",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer",
+        }}
+        onClick={() => navigate("/specification")}
+      >
+        명세서 작성 시작하기
+      </button>
+    </div>
+  )}
+
   <div ref={bottomRef}></div>
     {/* Sidebar 추가 */}
     {selectedInput && <Sidebar selectedInput={selectedInput} />}

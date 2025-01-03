@@ -119,7 +119,7 @@ def get_rag_chain():
     return conversational_rag_chain
 
 
-def get_ai_response(user_message):
+def get_ai_response(user_message, context=None):
     try:
         # 1. 예제 질문 확인
         example_match = next(
@@ -131,16 +131,21 @@ def get_ai_response(user_message):
         if example_match:
             time.sleep(3)
             return example_match
-        
+
         # 3. 예제 질문과 일치하지 않으면 RAG 체인 실행
         dictionary_chain = get_dictionary_chain()
         rag_chain = get_rag_chain()
-        
+
+        # 문맥이 있다면 이를 함께 전달
+        input_data = {"question": user_message}
+        if context:
+            input_data["context"] = context
+
         patent_chain = {"input": dictionary_chain} | rag_chain
         
         # 응답 생성
         response_generator = patent_chain.stream(
-            {"question": user_message},
+            input_data,
             config={"configurable": {"session_id": "abc123"}},
         )
         response = ''.join([chunk for chunk in response_generator])
@@ -152,3 +157,4 @@ def get_ai_response(user_message):
         return response
     except Exception as e:
         return f"Error in AI response generation: {str(e)}"
+
