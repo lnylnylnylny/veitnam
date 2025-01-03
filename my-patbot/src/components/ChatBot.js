@@ -6,6 +6,8 @@ import sendIcon from "../icon/send.png";
 import newchat from "../icon/refresh.png";
 import robot from "../icon/robot.png";
 import user from "../icon/user (1).png";
+import Sidebar from "./Sidebar.js";
+
 
 const Chatbot = () => {
   const [chatHistory, setChatHistory] = useState([]);
@@ -18,6 +20,8 @@ const Chatbot = () => {
   const userName = location.state?.userName || "User";
   const [selectedChatId, setSelectedChatId] = useState(null);
   const bottomRef = useRef(null); // 스크롤 제어를 위한 Ref 생성
+  const [selectedInput, setSelectedInput] = useState("");
+  const [showSidebar, setShowSidebar] = useState(false);
 
 
   const [language, setLanguage] = useState("en");
@@ -71,6 +75,16 @@ const Chatbot = () => {
     
     setCurrentChat((prev) => [...prev, { sender: "user", text: input }]);
 
+
+  // 특정 질문에 따른 Sidebar 상태 업데이트
+  if (input.includes("시나리오 시뮬레이션의 유사 특허들을 보여줘")) {
+    setSelectedInput("시나리오 시뮬레이션의 유사 특허들을 보여줘");
+  } else if (input.includes("우울증 진단 게임의 유사 특허들을 보여줘")) {
+    setSelectedInput("우울증 진단 게임의 유사 특허들을 보여줘");
+  } else {
+    setSelectedInput(""); // 다른 질문일 경우 Sidebar 닫기
+  }
+
     try {
       const response = await fetch("http://127.0.0.1:5000/api/chat", {
         method: "POST",
@@ -86,8 +100,6 @@ const Chatbot = () => {
       console.error("Error communicating with backend:", error);
       setCurrentChat((prev) => [...prev, { sender: "bot", text: "Sorry, there was an error!" }]);
     } 
-      
-
   };
 
   const saveCurrentChat = () => {
@@ -407,6 +419,7 @@ const Chatbot = () => {
         style={{
           ...styles.message,
           ...(msg.sender === "bot" ? styles.botMessage : styles.userMessage),
+          whiteSpace: "pre-line", // 줄바꿈 처리를 위해 추가
         }}
       >
         <span>{msg.text}</span>
@@ -414,6 +427,8 @@ const Chatbot = () => {
     </div>
   ))}
   <div ref={bottomRef}></div>
+    {/* Sidebar 추가 */}
+    {selectedInput && <Sidebar selectedInput={selectedInput} />}
 
 </div>
 
