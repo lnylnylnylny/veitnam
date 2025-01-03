@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDarkMode } from "./DarkModeContext";
 import sidebarIcon from "../icon/sidebar.png";
@@ -6,6 +6,10 @@ import sendIcon from "../icon/send.png";
 import newchat from "../icon/refresh.png";
 import robot from "../icon/robot.png";
 import user from "../icon/user (1).png";
+import Sidebar from "./Sidebar.js";
+import loadingIcon from "../icon/Loading.gif";
+
+
 
 const Chatbot = () => {
   const [chatHistory, setChatHistory] = useState([]);
@@ -17,6 +21,12 @@ const Chatbot = () => {
   const { isDarkTheme, toggleTheme } = useDarkMode();
   const userName = location.state?.userName || "User";
   const [selectedChatId, setSelectedChatId] = useState(null);
+  const bottomRef = useRef(null); // 스크롤 제어를 위한 Ref 생성
+  const [selectedInput, setSelectedInput] = useState("");
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [loading, setLoading] = useState(false); // 로딩 상태 추가
+  const [showActionButton, setShowActionButton] = useState(false); // 버튼 표시 상태
+
 
   const [language, setLanguage] = useState("en");
   const [labels, setLabels] = useState({
@@ -53,6 +63,9 @@ const Chatbot = () => {
     }
   }, [userName, chatHistory]); // `chatHistory`를 의존성 배열에 추가
   
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [currentChat]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((prevState) => !prevState);
@@ -65,6 +78,32 @@ const Chatbot = () => {
     setInput(""); // 입력 필드 초기화
     
     setCurrentChat((prev) => [...prev, { sender: "user", text: input }]);
+    setLoading(true); // 로딩 시작
+
+  // 특정 질문에 따른 Sidebar 상태 업데이트
+  if (input.includes("시나리오 시뮬레이션의 유사 특허들을 보여줘")) {
+    setSelectedInput("시나리오 시뮬레이션의 유사 특허들을 보여줘");
+  } else if (input.includes("우울증 진단 게임의 유사 특허들을 보여줘")) {
+    setSelectedInput("우울증 진단 게임의 유사 특허들을 보여줘");
+  } else if (input.includes("우울증 진단 게임 명세서를 작성하고 싶어 도와줘")) {
+    setLoading(true); // 로딩 시작
+    setTimeout(() => {
+      setCurrentChat((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "네, 도와드리겠습니다. 아래 버튼을 눌러주세요!",
+        },
+      ]);
+      setShowActionButton(true); // 버튼 표시 상태 활성화
+      setLoading(false); // 로딩 종료
+    }, 1000); // 1초 후 작업 수행
+    return; // AI 호출 중단
+  }  
+  else {
+    setSelectedInput(""); // 다른 질문일 경우 Sidebar 닫기
+    setShowActionButton(false); // 버튼 숨기기
+  }
 
     try {
       const response = await fetch("http://127.0.0.1:5000/api/chat", {
@@ -80,9 +119,10 @@ const Chatbot = () => {
     } catch (error) {
       console.error("Error communicating with backend:", error);
       setCurrentChat((prev) => [...prev, { sender: "bot", text: "Sorry, there was an error!" }]);
-    } 
-      
-
+    } finally {
+      setLoading(false); // 로딩 종료
+    }
+    
   };
 
   const saveCurrentChat = () => {
@@ -90,6 +130,10 @@ const Chatbot = () => {
       setChatHistory((prev) => [...prev, { id: Date.now(), messages: currentChat }]);
       setCurrentChat([]); // 새 채팅 초기화
       setInput(""); // 입력창 초기화
+
+      // 추천 자료 닫기
+    setSelectedInput(""); 
+    setIsSidebarOpen(false); // 사이드바 닫기
     }
   };
   
@@ -100,6 +144,8 @@ const Chatbot = () => {
   const deleteChatHistory = (id) => {
     setChatHistory((prev) => prev.filter((chat) => chat.id !== id));
   };
+
+  
   
 
   const styles = {
@@ -221,10 +267,12 @@ const Chatbot = () => {
       overflowY: "auto",
       display: "flex",
       flexDirection: "column",
-      //반응형일 때 width: "100%", maxWidth: "900px",
-      width: "900px", // 화면 사이즈 맞춤 설정
+      //width: "100%", maxWidth: "800px",반응형일 때 
+      width: "800px", // 화면 사이즈 맞춤 설정
       margin: "0 auto",
       borderRadius: "10px",
+      scrollbarWidth: "thin", // Firefox에서 얇은 스크롤바
+      scrollbarColor: "#888 #f1f1f1", // Firefox에서 스크롤바 색상
     },
     messageContainer: {
       display: "flex",
@@ -310,6 +358,16 @@ const Chatbot = () => {
       cursor: "pointer",
       backgroundColor: "transparent",
     },
+    loading: {
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: "10px",
+    },
+    loadingIcon: {
+      width: "30px",
+      height: "30px",
+    },
   };
 
   return (
@@ -379,7 +437,8 @@ const Chatbot = () => {
         </div>
 
         <div style={styles.chatWindow}>
-  {currentChat.map((msg, index) => (
+  {currentChat.map((msg, index) => (    
+
     <div
       key={index}
       style={
@@ -398,12 +457,44 @@ const Chatbot = () => {
         style={{
           ...styles.message,
           ...(msg.sender === "bot" ? styles.botMessage : styles.userMessage),
+          whiteSpace: "pre-line", // 줄바꿈 처리를 위해 추가
         }}
       >
         <span>{msg.text}</span>
       </div>
     </div>
   ))}
+
+    {/* 로딩 상태 */}
+      {loading && (
+        <div style={styles.loading}>
+          <img src={loadingIcon} alt="Loading..." style={styles.loadingIcon} />
+        </div>
+      )}
+          
+  {/* 버튼 렌더링 */}
+  {showActionButton && (
+    <div style={{ textAlign: "center", margin: "10px 0" }}>
+      <button
+        style={{
+          padding: "10px 20px",
+          backgroundColor: "#007bff",
+          color: "#fff",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer",
+        }}
+        onClick={() => navigate("/specification")}
+      >
+        명세서 작성 시작하기
+      </button>
+    </div>
+  )}
+
+  <div ref={bottomRef}></div>
+    {/* Sidebar 추가 */}
+    {selectedInput && <Sidebar selectedInput={selectedInput} />}
+
 </div>
 
 

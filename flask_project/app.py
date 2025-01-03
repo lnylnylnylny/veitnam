@@ -7,6 +7,9 @@ from ai_model import get_ai_response
 app = Flask(__name__)
 CORS(app)
 
+# 사용자 세션별 컨텍스트 관리
+user_context = {}
+
 # 회원가입
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -78,22 +81,41 @@ def chat():
     React에서 보낸 메시지를 처리하고 AI 응답을 반환하는 API.
     """
     user_message = request.json.get('message')
+    user_id = request.json.get('user_id')  # 사용자 ID로 세션 구분
 
     # 메시지가 없는 경우
     if not user_message:
         return jsonify({"response": "No message received!"})
 
     try:
-        # AI 응답 생성
-        ai_response = get_ai_response(user_message)
+        # 사용자 컨텍스트 관리
+        if user_id not in user_context:
+            user_context[user_id] = {}
+
+        # AI 응답 생성 (컨텍스트 포함)
+        ai_response = get_ai_response(user_message, user_context[user_id])
         
         # JSON 직렬화 가능 여부 확인
         if not isinstance(ai_response, str):
             ai_response = str(ai_response)
         
+        # 컨텍스트 업데이트
+        user_context[user_id][user_message] = ai_response
+
         return jsonify({"response": ai_response})
     except Exception as e:
         return jsonify({"response": f"Error generating response: {str(e)}"})
+
+@app.route('/clear_context', methods=['POST'])
+def clear_context():
+    """
+    사용자 컨텍스트를 초기화하는 API.
+    """
+    user_id = request.json.get('user_id')
+    if user_id and user_id in user_context:
+        user_context[user_id] = {}
+        return jsonify({"message": "User context cleared successfully!"})
+    return jsonify({"message": "No context to clear."})
 
 @app.route('/')
 def home():

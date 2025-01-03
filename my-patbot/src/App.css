@@ -36,3 +36,15 @@
     transform: rotate(360deg);
   }
 }
+
+/* HTML과 BODY의 기본 여백 제거 및 스크롤 방지 */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; /* 전체 스크롤 방지 */
+}
+
+#root {
+  height: 100%; /* React 루트 컨테이너가 화면 전체 차지 */
+}

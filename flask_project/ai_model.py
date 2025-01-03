@@ -10,6 +10,7 @@ from langchain.memory.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from config import answer_examples
+import time
 
 
 store = {}
@@ -84,12 +85,11 @@ def get_rag_chain():
         example_prompt=example_prompt,
         examples=answer_examples,
     )
+    
     system_prompt = (
-        "당신은 특허법 전문가입니다. 사용자의 특허법에 관한 질문에 답변해주세요"
-        "아래에 제공된 문서를 활용해서 답변해주시고"
-        "답변을 알 수 없다면 사과와 함께 모른다고 답변해주세요"
-        "답변을 제공할 때는 특허청에 따르면 이라고 시작하면서 답변해주시고"
-        "2-3 문장정도의 짧은 내용의 답변을 원합니다"
+        "당신은 특허법 전문가입니다. 사용자의 특허법에 관한 질문에 답변해주세요."
+        "아래에 제공된 문서를 활용해서 답변해주시고, "
+        "답변을 알 수 없다면 사과와 함께 모른다고 답변해주세요."
         "\n\n"
         "{context}"
     )
@@ -97,12 +97,13 @@ def get_rag_chain():
     qa_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
-            few_shot_prompt,
+            few_shot_prompt,  # Few-Shot Prompt 추가
             MessagesPlaceholder("chat_history"),
             ("human", "{input}"),
         ]
     )
-    history_aware_retriever = get_history_retriever()
+    
+    history_aware_retriever = get_history_retriever() # None으로 하면
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
 
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
@@ -117,22 +118,43 @@ def get_rag_chain():
 
     return conversational_rag_chain
 
-def get_ai_response(user_message):
-    """
-    주어진 메시지에 대한 AI 응답을 반환합니다.
-    """
-    dictionary_chain = get_dictionary_chain()
-    rag_chain = get_rag_chain()
-    patent_chain = {"input": dictionary_chain} | rag_chain
 
-    # generator를 문자열로 변환
+def get_ai_response(user_message, context=None):
     try:
+        # 1. 예제 질문 확인
+        example_match = next(
+            (example["answer"] for example in answer_examples if example["input"] == user_message),
+            None
+        )
+        
+        # 2. 예제 질문과 일치하면 해당 답변 반환
+        if example_match:
+            time.sleep(3)
+            return example_match
+
+        # 3. 예제 질문과 일치하지 않으면 RAG 체인 실행
+        dictionary_chain = get_dictionary_chain()
+        rag_chain = get_rag_chain()
+
+        # 문맥이 있다면 이를 함께 전달
+        input_data = {"question": user_message}
+        if context:
+            input_data["context"] = context
+
+        patent_chain = {"input": dictionary_chain} | rag_chain
+        
+        # 응답 생성
         response_generator = patent_chain.stream(
-            {"question": user_message},
+            input_data,
             config={"configurable": {"session_id": "abc123"}},
         )
-        # generator에서 문자열로 데이터 수집
         response = ''.join([chunk for chunk in response_generator])
+        
+        # 결과 확인 및 반환
+        if not response or "알 수 없다" in response:
+            return "죄송합니다. 해당 질문에 대한 답변을 찾을 수 없습니다."
+        
         return response
     except Exception as e:
         return f"Error in AI response generation: {str(e)}"
+
