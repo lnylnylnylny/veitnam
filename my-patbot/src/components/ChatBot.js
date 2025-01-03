@@ -7,6 +7,7 @@ import newchat from "../icon/refresh.png";
 import robot from "../icon/robot.png";
 import user from "../icon/user (1).png";
 import Sidebar from "./Sidebar.js";
+import loadingIcon from "../icon/Loading.gif";
 
 
 const Chatbot = () => {
@@ -22,6 +23,7 @@ const Chatbot = () => {
   const bottomRef = useRef(null); // 스크롤 제어를 위한 Ref 생성
   const [selectedInput, setSelectedInput] = useState("");
   const [showSidebar, setShowSidebar] = useState(false);
+  const [loading, setLoading] = useState(false); // 로딩 상태 추가
 
 
   const [language, setLanguage] = useState("en");
@@ -74,7 +76,7 @@ const Chatbot = () => {
     setInput(""); // 입력 필드 초기화
     
     setCurrentChat((prev) => [...prev, { sender: "user", text: input }]);
-
+    setLoading(true); // 로딩 시작
 
   // 특정 질문에 따른 Sidebar 상태 업데이트
   if (input.includes("시나리오 시뮬레이션의 유사 특허들을 보여줘")) {
@@ -99,7 +101,10 @@ const Chatbot = () => {
     } catch (error) {
       console.error("Error communicating with backend:", error);
       setCurrentChat((prev) => [...prev, { sender: "bot", text: "Sorry, there was an error!" }]);
-    } 
+    } finally {
+      setLoading(false); // 로딩 종료
+    }
+    
   };
 
   const saveCurrentChat = () => {
@@ -335,6 +340,16 @@ const Chatbot = () => {
       cursor: "pointer",
       backgroundColor: "transparent",
     },
+    loading: {
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: "10px",
+    },
+    loadingIcon: {
+      width: "30px",
+      height: "30px",
+    },
   };
 
   return (
@@ -430,6 +445,11 @@ const Chatbot = () => {
       </div>
     </div>
   ))}
+            {loading && (
+            <div style={styles.loading}>
+              <img src={loadingIcon} alt="Loading..." style={styles.loadingIcon} />
+            </div>
+          )}
   <div ref={bottomRef}></div>
     {/* Sidebar 추가 */}
     {selectedInput && <Sidebar selectedInput={selectedInput} />}
