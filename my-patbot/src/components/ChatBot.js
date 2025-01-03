@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDarkMode } from "./DarkModeContext";
 import sidebarIcon from "../icon/sidebar.png";
@@ -17,6 +17,8 @@ const Chatbot = () => {
   const { isDarkTheme, toggleTheme } = useDarkMode();
   const userName = location.state?.userName || "User";
   const [selectedChatId, setSelectedChatId] = useState(null);
+  const bottomRef = useRef(null); // 스크롤 제어를 위한 Ref 생성
+
 
   const [language, setLanguage] = useState("en");
   const [labels, setLabels] = useState({
@@ -53,6 +55,9 @@ const Chatbot = () => {
     }
   }, [userName, chatHistory]); // `chatHistory`를 의존성 배열에 추가
   
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [currentChat]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((prevState) => !prevState);
@@ -100,6 +105,8 @@ const Chatbot = () => {
   const deleteChatHistory = (id) => {
     setChatHistory((prev) => prev.filter((chat) => chat.id !== id));
   };
+
+  
   
 
   const styles = {
@@ -221,10 +228,12 @@ const Chatbot = () => {
       overflowY: "auto",
       display: "flex",
       flexDirection: "column",
-      //반응형일 때 width: "100%", maxWidth: "900px",
-      width: "900px", // 화면 사이즈 맞춤 설정
+      width: "100%", maxWidth: "800px",//반응형일 때 
+      // width: "900px", // 화면 사이즈 맞춤 설정
       margin: "0 auto",
       borderRadius: "10px",
+      scrollbarWidth: "thin", // Firefox에서 얇은 스크롤바
+      scrollbarColor: "#888 #f1f1f1", // Firefox에서 스크롤바 색상
     },
     messageContainer: {
       display: "flex",
@@ -404,6 +413,8 @@ const Chatbot = () => {
       </div>
     </div>
   ))}
+  <div ref={bottomRef}></div>
+
 </div>
 
 
