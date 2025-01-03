@@ -107,6 +107,10 @@ const Chatbot = () => {
       setChatHistory((prev) => [...prev, { id: Date.now(), messages: currentChat }]);
       setCurrentChat([]); // 새 채팅 초기화
       setInput(""); // 입력창 초기화
+
+      // 추천 자료 닫기
+    setSelectedInput(""); 
+    setIsSidebarOpen(false); // 사이드바 닫기
     }
   };
   

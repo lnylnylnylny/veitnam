@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useDarkMode } from "./DarkModeContext"; // 다크모드 컨텍스트 가져오기
 
 const Sidebar = ({ selectedInput }) => {
   const [expandedSections, setExpandedSections] = useState({});
   const [hoveredIndex, setHoveredIndex] = useState(null); // Hover 상태 관리
   const { isDarkTheme } = useDarkMode(); // 다크모드 상태 가져오기
+  const [currentLinks, setCurrentLinks] = useState([]); // 추천 자료 링크 상태
 
-  const pdfLinks = {
+  // pdfLinks를 useMemo로 메모이제이션
+  const pdfLinks = useMemo(() => ({
     "시나리오 시뮬레이션의 유사 특허들을 보여줘": [
       {
         name: "시나리오를 이용한 시뮬레이션 방법 및 시스템.pdf",
@@ -41,9 +43,19 @@ const Sidebar = ({ selectedInput }) => {
         image: "/floor_plan/d3.png",
       },
     ],
-  };
+  }), []);
 
-  const currentLinks = pdfLinks[selectedInput] || [];
+  useEffect(() => {
+    if (selectedInput) {
+      // 추천 자료를 1초 후에 설정
+      const timeout = setTimeout(() => {
+        setCurrentLinks(pdfLinks[selectedInput] || []);
+      }, 3000); // 3초 지연
+
+      // 컴포넌트가 언마운트될 때 타이머 정리
+      return () => clearTimeout(timeout);
+    }
+  }, [selectedInput, pdfLinks]); // pdfLinks 포함
 
   const toggleSection = (index) => {
     setExpandedSections((prevState) => ({

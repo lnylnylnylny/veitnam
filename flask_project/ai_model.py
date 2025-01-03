@@ -129,7 +129,7 @@ def get_ai_response(user_message):
         
         # 2. 예제 질문과 일치하면 해당 답변 반환
         if example_match:
-            time.sleep(2)
+            time.sleep(3)
             return example_match
         
         # 3. 예제 질문과 일치하지 않으면 RAG 체인 실행
